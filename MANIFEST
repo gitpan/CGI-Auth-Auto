@@ -1,0 +1,11 @@
+Makefile.PL
+MANIFEST
+lib/CGI/Auth/Auto.pm					# only real important thing
+cgi-bin/auth/sess/README			# trick to include sess dir here for example					
+cgi-bin/auth.cgi						# example script using this system
+cgi-bin/auth/AuthCfg.pm				# from Auth::CGI, just here for example
+cgi-bin/auth/authman.pl				# from Auth::CGI, just here for example
+cgi-bin/auth/user.dat				# from Auth::CGI, just here for example - has one user default:default
+cgi-bin/auth/login.html				# from Auth::CGI, just here for example - modified to be *simpler*
+README									# notes
+META.yml                         #        Module meta-data (added by MakeMaker)

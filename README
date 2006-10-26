@@ -1,0 +1,20 @@
+README
+CGI::Auth::Auto
+
+CGI::Auth comes with extra files you would place in your hosting account. It comes with a tool to manage users, 
+with a template, etc.
+
+Included in this distribution is a slightly cuslom template which I like more then the one that comes with 
+CGI::Auth. The tempalte in cgi-bin/auth/login.html is more vague, has no colors, etc. This is the template I like
+mote.
+
+
+The included user.dat file has a user named 'default' with password 'default'.
+
+There is also a test script in cgi-bin/cgi_auth_auto_test.cgi to get you up and running.
+
+Make sure you have CGI::Auth available on your server.
+
+Please forward comments, problems, etc to Leo Charre, leo (at) leocharre (dot) com.
+
+
