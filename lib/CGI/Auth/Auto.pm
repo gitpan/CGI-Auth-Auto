@@ -4,7 +4,7 @@ use CGI::Carp;
 use strict;
 use base qw(CGI::Auth);
 #TODO: make this do a cgi::session also!
-our $VERSION = sprintf "%d.%03d", q$Revision: 1.4 $ =~ /(\d+)/g;
+our $VERSION = sprintf "%d.%02d", q$Revision: 1.5 $ =~ /(\d+)/g;
 
 # it's a bitch to pass new param to new - this module CGI::Auth sucks ass to inherit
 
@@ -116,9 +116,11 @@ sub get_cgi {
 
 __END__
 
+=pod
+
 =head1 NAME
 
-CGI::Auth::Auto
+CGI::Auth::Auto - Automatic authentication maintenance for cgi scrips.
 
 =head1 SYNOPSIS
 
@@ -127,17 +129,17 @@ $auth->check;
 
 =head1 DESCRIPTION
 
-Adds auto session id passing mechanism to CGI::Auth. Also provides simple auth drop system (logout).
+CGI::Auth is a nice module- But it leaves you with the responsibility of passing around
+the "session id"- In a form, a cookie, etc. 
+I wanted to be able to simply drop in a few lines into any cgi application and have it take 
+care of authentication without any further change to the code.
+
+CGI::Auth::Auto has automatic "session id" passing via a cookie.
 
 This module inherits CGI::Auth.
 
-CGI::Auth is great. It's simple to use. You can hide scripts behind authorization with
-a simple prepend to code. I love it.
-Thing is.. It still leaves us to pass around the sfparam_value around, so that 
-CGI::Auth can check the session validity each time.
-
 This module adds functionality to check() to maintain a cookie for you.
-It also provides for a logout medthod- to get rid of it.
+It also provides for a logout medthod- to get rid of the authentication.
 
 You use this exactly as you would use CGI::Auth, only the client *must* accept cookies.
 And you no longer have to worry about passing the session id returned from CGI::Auth.
@@ -171,16 +173,6 @@ Example assumes you installed CGI::Auth and its support files.
 
 	exit;
 
-
-=head1 DETAILS
-
-It adds extra functionality to CGI::Auth::check to try to retrieve cookie from client,
-it makes a cookie if it should.
-
-You must read documentation for CGI::Auth for arguments to object constructor, template
-customization, and usage.
-
-=cut
 
 
 
@@ -278,6 +270,14 @@ intrusion etc.. Then your code should log it, and then call logout() as a last s
 	# nothing wrong.. continue script..
 	# ...
 
+=head1 BUGS
+
+Please report bugs via email to author.
+
+=head1 TODO
+
+Add CGI::Session automation in addition to the cookie system. This way, by simply using this module, you
+will have authentication and state maintained for you.
 
 
 =head1 SEE ALSO
