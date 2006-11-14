@@ -4,7 +4,7 @@ use CGI::Carp;
 use strict;
 use base qw(CGI::Auth);
 #TODO: make this do a cgi::session also!
-our $VERSION = sprintf "%d.%02d", q$Revision: 1.5 $ =~ /(\d+)/g;
+our $VERSION = sprintf "%d.%02d", q$Revision: 1.6 $ =~ /(\d+)/g;
 
 # it's a bitch to pass new param to new - this module CGI::Auth sucks ass to inherit
 
@@ -112,6 +112,9 @@ sub get_cgi {
 	return $self->{cgi};
 }
 
+
+
+
 1;
 
 __END__
@@ -184,7 +187,7 @@ Example assumes you installed CGI::Auth and its support files.
 Default is +1h 
 You can set the cookie expire time before check is called to change this value.
 
-	my $auth = new CGI::Auth( ... );	
+	my $auth = new CGI::Auth::Auto( ... );	
 	$auth->set_cookie_expire_time('+15m');
 	$auth->check;
 
@@ -203,7 +206,7 @@ have used set_cookie_expire() then it would return that value.
 
 By default the logout field cgi parameter name is 'logout'. You can change the name this way:
 
-	my $auth = new CGI::Auth( ... );	
+	my $auth = new CGI::Auth::Auto( ... );	
 	$auth->set_logout_param_name('elvis_has_left_the_building');
 	$auth->check;
 
@@ -215,7 +218,7 @@ instead.
 =head2 logout()
 
 Forces logout. Makes cookie expired and blank.
-Then redirects to whatever CGI::Auth formaction was set to.
+Then redirects to whatever CGI::Auth::Auto formaction was set to.
 Then exits.
 
 
