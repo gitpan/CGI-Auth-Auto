@@ -1,5 +1,6 @@
 Makefile.PL
 MANIFEST
 lib/CGI/Auth/Auto.pm					# only real important thing
+cgi-bin/auth/login.html				# minimal template, the one in CGI::Auth was in drag
 README									# notes
 META.yml                         #        Module meta-data (added by MakeMaker)

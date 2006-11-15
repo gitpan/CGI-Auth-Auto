@@ -4,6 +4,7 @@ WriteMakefile(
     VERSION_FROM      => 'lib/CGI/Auth/Auto.pm', # finds $VERSION
     PREREQ_PM         => { 
 		'CGI::Auth' => 0,
+		'Carp'		=> 0,
 		'HTML::Template' => 0,
 		}, 
 );
