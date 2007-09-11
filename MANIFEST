@@ -1,6 +1,12 @@
 Makefile.PL
 MANIFEST
 lib/CGI/Auth/Auto.pm					# only real important thing
-cgi-bin/auth/login.html				# minimal template, the one in CGI::Auth was in drag
+cgi-bin/auth/sess/README
+cgi-bin/auth/authman.pl
+cgi-bin/auth/login.html          # clean bare bones login template
+cgi-bin/auth/user.dat            # user:default password:default CHANGE THIS if you are using it
+cgi-bin/auth/README
+cgi-bin/auth.cgi                 # example script
 README									# notes
 META.yml                         #        Module meta-data (added by MakeMaker)
+t/00.t

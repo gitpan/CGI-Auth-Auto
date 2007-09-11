@@ -2,8 +2,9 @@ package CGI::Auth::Auto;
 use Carp;
 use strict;
 use base qw(CGI::Auth);
-#use Smart::Comments '###';
-our $VERSION = sprintf "%d.%02d", q$Revision: 1.10 $ =~ /(\d+)/g;
+use LEOCHARRE::DEBUG;
+our $VERSION = sprintf "%d.%02d", q$Revision: 1.11 $ =~ /(\d+)/g;
+$CGI::Auth::Auto::CGI_APP_COMPATIBLE = 'rm=logout';
 
 
 sub new {
@@ -16,14 +17,35 @@ sub new {
 	$param->{-authfields} ||= [
             {id => 'user', display => 'User Name', hidden => 0, required => 1},
             {id => 'pw', display => 'Password', hidden => 1, required => 1},
-        ];
-	$param->{-authdir} ||= (defined $ENV{DOCUMENT_ROOT}) ? "$ENV{DOCUMENT_ROOT}/../cgi-bin/auth" : undef;	
-	$param->{-formaction} ||= $ENV{SCRIPT_NAME} ? $ENV{SCRIPT_NAME} : undef;
-
+        ];      
+   
+	$param->{-authdir}      ||= _guess_authdir();
+	$param->{-formaction}   ||= _guess_formaction();
+   $param->{-sessdir}      ||= _guess_sessdir();
+   $param->{-logintmplpath}||= _guess_authdir();
+   $param->{-logintmpl}||= 'login.html';
+   
+   if (DEBUG){
+      require Data::Dumper;
+      printf STDERR __PACKAGE__."::new() params: %s\n", Data::Dumper::Dumper($param);
+      #debug(Data::Dumper::Dumper(\%ENV)."\n");
+   }
+     
+   if (!defined $param->{-authdir}){
+      carp(__PACKAGE__."::new() missing -authdir param to constructor or setting \$ENV{DOCUMENT_ROOT}");
+      return; 
+   }
+   
 	$self->init($param) or return undef;
 
 	return $self;
 }
+
+
+
+
+
+
 
 
 
@@ -35,6 +57,7 @@ sub check {
 	$self->_pre_check;
 	$self->SUPER::check; # access overridden method
 	$self->_post_check;
+   return;
 }
 
 
@@ -155,18 +178,11 @@ sub logout {
 	$self->_ruin_cookie_and_redirect and exit(0);	
 }
 
-
-
-
-
 # legacy
 sub run {
 	my $self = shift;
 	$self->check;
 }
-
-
-
 
 
 
@@ -196,7 +212,31 @@ sub _get_sess_file_from_cookie {
 
 sub _requested_logout {
 	my $self= shift;
-	defined $self->{cgi}->param($self->get_logout_param_name) or return 0;
+
+   # does the query string look like we are trying to log out?
+
+
+   # for cgi application:
+   
+   if ($CGI::Auth::Auto::CGI_APP_COMPATIBLE){
+      my($param,$runmode) = split(/\=/, $CGI::Auth::Auto::CGI_APP_COMPATIBLE );
+      
+      if ( defined $self->get_cgi->param($param) and $self->get_cgi->param($param) eq $runmode ){
+         debug("detected $CGI::Auth::Auto::CGI_APP_COMPATIBLE\n");
+         return 1;
+      }
+   }
+
+   if ( defined $ENV{QUERY_STRING} ){
+      debug("\$ENV{QUERY_STRING} $ENV{QUERY_STRING}\n");
+      return 1 if $ENV{QUERY_STRING} eq 'logout';
+   }
+   
+   my $paramname = $self->get_logout_param_name;
+   my $paramval = $self->get_cgi->param($self->get_logout_param_name);   
+   debug( sprintf " param name: $paramname [$paramval:%s]", ( defined $paramval ? 1 : 0 ));  
+
+   defined $paramval or return 0;
 	return 1;
 }
 
@@ -229,6 +269,76 @@ sub set_logout_param_name {
 
 
 
+
+# GUESSING SUBS
+
+sub _guess_formaction {   
+   my $rel = $ENV{SCRIPT_NAME};
+   $rel ||= $0;
+   defined $rel or confess("cant guess -formaction");
+   
+     
+   if ($rel=~/^\// ){
+      debug("path starts with slash [$rel]");
+      defined $ENV{DOCUMENT_ROOT} or confess('ENV DOCUMENT ROOT is not set');
+      $rel=~s/^$ENV{DOCUMENT_ROOT}\/+//;
+      $rel=~s/^\/+//;
+   }
+
+   debug("$rel\n");
+   return "/$rel";
+}
+
+sub _guess_authdir {   
+   my $dir = __guess_base().'/auth';   
+   debug("$dir\n");
+   return $dir;
+}
+
+sub __guess_base {
+   my $dir;
+   require Cwd;  
+   
+   if (defined $ENV{DOCUMENT_ROOT}){
+      debug('$ENV{DOCUMENT_ROOT} is defined,');      
+      $dir =   Cwd::abs_path("$ENV{DOCUMENT_ROOT}/../cgi-bin");
+   }   
+   
+   else {      
+      $dir = _script_abs_loc();
+   }   
+   debug("$dir\n");
+   return $dir;
+}
+
+sub _guess_sessdir {
+   my $dir = __guess_base().'/auth/sess';   
+   debug("$dir\n");
+   return $dir;
+}
+
+sub _script_abs_loc {
+   my $abs = _script_abs();
+   $abs=~s/\/+[^\/]+$//;
+   return $abs;
+}
+
+sub _script_abs {
+   my $abs = $0;
+
+   unless( defined $abs ){
+      defined $ENV{SCRIPT_NAME} or confess("cant get abs loc of script");
+      $abs = $ENV{SCRIPT_NAME};
+   }
+   
+   unless( $abs=~/^\//){
+      require Cwd;
+      $abs = Cwd::cwd().'/'.$abs;
+   }
+   return $abs;
+}
+
+
 1;
 
 __END__
@@ -246,21 +356,36 @@ CGI::Auth::Auto - Automatic authentication maintenance and persistence for cgi s
 
 	# ok, authenticated, logged in.
 
+   # anything in the script that happens here on is received by an authenticated user
+
 =head1 DESCRIPTION
 
-CGI::Auth is a nice module- But it leaves you with the responsibility of passing around
-the "session id"- Via query string, in a form, a cookie, etc.
-It also has no defaults for its constructor parameters.
+This is a system to add one line into a cgi script and now.. voila, it requires authrentication
+to run the rest of the code.
+You don't have to change anything else of what your script is already doing.
+It will work with CGI::Application instances as well.
+
+=head2 MOTIVATION
+
+CGI::Auth is a nice module- But I wanted to be able to use it without having to set up a
+bunch of parameters to the constructor. This module attempts to make good guesses
+about what those parameters should be.
+
+The other thing this module addresses, is having to pass the session id around.
+CGI::Auth makes you pass the "session id"- Via query string, in a form, a cookie, etc.
+
+=head2 FEATURES
 
 I wanted to be able to simply drop in a line into any cgi application and have it take 
 care of authentication without any further change to the code.
+
 I also wanted to not *have* to pass certain arguments to the constructor. So new() constrcutor
-has been overridden to optionally use default params for -authfields -logintmpl -authdir 
+had been overridden to optionally use default params for -authfields -logintmpl -authdir 
 and -formaction. 
 
 CGI::Auth::Auto has automatic "sess_file" id passing via a cookie.
 
-This module inherits CGI::Auth.
+This module uses CGI::Auth as base.
 
 This module adds functionality to check() to keep track of the sess_file id for you, and to
 detect a user "logout" and do something about it.
@@ -286,24 +411,34 @@ These are the parameters that if left out to new(), will be set to defaults:
 Thus if you normally CGI::Auth new() like this:
 
 	my $auth = new CGI::Auth({
-		-formaction             => $ENV{SCRIPT_NAME},	
+		-formaction             => '/cgi-bin/myscript.cgi',	
 		-authfields             => [
             {id => 'user', display => 'User Name', hidden => 0, required => 1},
             {id => 'pw', display => 'Password', hidden => 1, required => 1},
         ],
-	   -authdir                => $ENV{DOCUMENT_ROOT}."/../cgi-bin/auth",
+	   -authdir                => /home/myself/cgi-bin/auth",
 	});
 
 You can use this module and do this instead:
 
 	my $auth = new CGI::Auth::Auto;
 
--formaction 
-Atempts to default to $ENV{SCRIPT_NAME}. This is the environment variable on apache
-for the calling script. Very useful.
-Note that if you did not provided this argument and $ENV{SCRIPT_NAME} is not set, it 
-won't work. (You'll know it didn't work.)
+   # the rest is unchanged
+	my $auth = new CGI::Auth({
+		-formaction             => '/cgi-bin/myscript.cgi',	
+		-authfields             => [
+            {id => 'user', display => 'User Name', hidden => 0, required => 1},
+            {id => 'pw', display => 'Password', hidden => 1, required => 1},
+        ],
+	   -authdir                => /home/myself/cgi-bin/auth",
+	});
 
+Shown are the defaults. You do not need to provide these parameters.
+
+
+-formaction 
+If you do not provide one, the module tries to guess what the rel path to the script is.
+ 
 
 -authdir
 Now a default value of $ENV{DOCUMENT_ROOT} ../cgi-bin/authdir is present.
@@ -339,11 +474,14 @@ Also checks for logout. If so, drops cookie, deletes CGI::Auth session file.
 
 	$auth->check();
 
-See CGI::Auth check() for more. Should always be called.
+See CGI::Auth check() for more. 
+Should always be called, BEFORE anything else happens that you are trying to protect.
 
 
 
-=head1 NEW METHODS
+=head1 ADDED METHODS
+
+All methods available via CGI::Auth are present, additionally:
 
 =head2 set_cookie_expire_time()
 
@@ -407,9 +545,47 @@ Returns undef if no set.
 This module tries to detect a logout request when you call the medhod check().
 If there is a field submitted via a form or url query string (POST or GET) that is called
 logout and it holds a true value, it will call method logout().
-If the url reads http://mysite.com/cgi-bin/myapp.cgi?logout=1 
-Then you will be.. logged out.
 
+If your script is in :
+
+   http://mysite.com/cgi-bin/myapp.cgi
+
+There url calls will cause a logout:
+   
+   http://mysite.com/cgi-bin/myapp.cgi?logout=1
+   http://mysite.com/cgi-bin/myapp.cgi?logout=
+   http://mysite.com/cgi-bin/myapp.cgi?logout   
+   http://mysite.com/cgi-bin/myapp.cgi?rm=logout
+   
+The last one is for L<CGI::Application Compatibility>
+
+=head2 CGI::Application Compatibility
+   
+   http://mysite.com/cgi-bin/myapp.cgi?rm=logout
+
+If you want to run  a CGI::Application app, and don't want to bother setting up
+the wonderful (but a little complex) CGI::Application::Plugin::Authentication module..
+Be aware that then ALL of your runmodes in the cgi app will be protected.
+
+By default, to trigger a logout by CGI::Application, we are looking for 
+
+   rm=logout
+
+In the query string.
+
+What if you want it to be something else? Like runmode=log_me_out ?
+Do this:
+   
+   use CGI::Auth::Auto;
+   use MyCGIApp;
+   $CGI::Auth::Auto::CGI_APP_COMPATIBLE = 'runmode=log_me_out';
+   
+   my $auth = new CGI::Auth::Auto;
+   $auth->check;
+
+   my $cgiapp = new MyCGIApp;
+   $cgiapp->run;   
+   
 =head2 logout() EXAMPLE
 
 Method logout() forces logout. This calls CGI::Auth method endsession() (see CGI::Auth doc), this sets the 
@@ -422,17 +598,16 @@ This is to assure nothing else runs after that.
 		$auth->logout;
 	}	
 
-If the user maybe called an bad instruction or submitted funyn data, or you detect a possible
+If the user maybe called an bad instruction or submitted funny data, or you detect a possible
 intrusion etc.. Then your code should log it, and then call logout() as a last step.
 
-	my $auth = new CGI::Auth(...);
+	my $auth = new CGI::Auth::Auto;
 	$auth->check;
 
-	# check tainted data
-	# ...
+   # check user input
 	
 
-	if( $oh_no_this_tainted_data_sucks ){
+	if( $we_really_dont_like_this_user_input ){
 
 		# ok log it
 		# ...
@@ -460,28 +635,29 @@ Make this $ENV{DOCUMENT_ROOT}/../cgi-bin/auth.cgi to test it. Don't forget chmod
 	
 	my $auth = new CGI::Auth::Auto({
 		-authdir => "$ENV{DOCUMENT_ROOT}/../cgi-bin/auth"
-	});
+	}); # the program guesses for authdir, you can leave out if it resides alongside your script
 	$auth->check;
 	
-	print header();
-	print start_html();
+   my $html =
+	 header() .
+	 start_html() .
+	 h1("hello ".$auth->username) .
+	 p('You are logged in now.') .
+	 p('Would you like to log out? <a href="'.$ENV{SCRIPT_NAME}.'?logout=1">logout</a>');	
 	
-	print h1("hello ".$auth->username);
-	
-	print p('You are logged in now.');
-	
-	print p('Would you like to log out? <a href="'.$ENV{SCRIPT_NAME}.'?logout=1">logout</a>');	
-	
+   print $html;
+
 	exit;
 
 
 Parameter -authdir is where you have the CGI::Auth support files. You need the user.dat file there, etc.
 See CGI::Auth for more.
 
+In the example user.dat provided, username:default password:
+
 =head1 BUGS
 
 Please report bugs via email to author.
-
 
 =head1 CHANGES
 
@@ -494,13 +670,39 @@ decided by that point that the user is truly authenticated.
 A custom login.html template has been included in this distribution under cgi-bin/auth/login.html.
 This template is minimal as compares to the candy one that comes with CGI::Auth. 
 
+=head1 DEBUG
 
-head1 SEE ALSO
+To turn on debug info, in your cgi script, before you call check() :
 
-CGI::Auth, CGI::Cookie, HTML::Template 
+   $CGI::Auth::Auto::DEBUG = 1;
+
+=head1 ERRORS
+
+The most common error is that you are not passing the right authdir to the object.
+
+The authdir needs to exist and contain a user.dat simple text file.
+If you do not provide an authdir argument, that's ok, we try to guess for it.
+If your script is in /home/myself/cgi-bin/script.pl , then your auth dir is guessed as
+/home/myself/cgi-bin/auth
+And it must exist and contain the user.dat file. This can be a blank text file to begin with.
+Make sure it is chown and chmod properly.
+
+If your cgi is failing, turn on L<DEBUG> and run it again. A lot of useful information may be there.
+
+=head1 users.dat
+
+This file must reside inside your auth dir.
+If you script is in cgi-bin/script.cgi,
+you must have a cgi-bin/auth/sess dir and a cgi-bin/auth/users.dat file
+an example file is included in this distribution
+please read CGI::Auth for more info on managing that file.
+
+=head1 SEE ALSO
+
+CGI::Auth, CGI::Cookie, HTML::Template
 
 =head1 AUTHOR
 
-Leo Charre leo (at) leocharre (dot) com
+Leo Charre leocharre at cpan dot org
 
 =cut
