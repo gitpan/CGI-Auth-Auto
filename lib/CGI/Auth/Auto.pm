@@ -3,7 +3,7 @@ use Carp;
 use strict;
 use base qw(CGI::Auth);
 use LEOCHARRE::DEBUG;
-our $VERSION = sprintf "%d.%02d", q$Revision: 1.11 $ =~ /(\d+)/g;
+our $VERSION = sprintf "%d.%02d", q$Revision: 1.12 $ =~ /(\d+)/g;
 $CGI::Auth::Auto::CGI_APP_COMPATIBLE = 'rm=logout';
 
 
@@ -22,8 +22,11 @@ sub new {
 	$param->{-authdir}      ||= _guess_authdir();
 	$param->{-formaction}   ||= _guess_formaction();
    $param->{-sessdir}      ||= _guess_sessdir();
-   $param->{-logintmplpath}||= _guess_authdir();
-   $param->{-logintmpl}||= 'login.html';
+ 
+   if (defined $param->{-logintmplpath} or defined $param->{-logintmpl}){
+      $param->{-logintmplpath}   ||= _guess_authdir();
+      $param->{-logintmpl}       ||= 'login.html';
+   }
    
    if (DEBUG){
       require Data::Dumper;
@@ -696,6 +699,24 @@ If you script is in cgi-bin/script.cgi,
 you must have a cgi-bin/auth/sess dir and a cgi-bin/auth/users.dat file
 an example file is included in this distribution
 please read CGI::Auth for more info on managing that file.
+
+=head1 login.html
+
+If you define the 'logintmpl' or 'logintmplpath' arguments to constructor, the program
+tries to find login.html template or dies.
+If not, it uses a barebones hard coded output.
+
+So, again, if you have a cgi-bin/auth/login.html template:
+
+   my $auth = new CGI::Auth::Auto({ -logintmpl => 'login.html' });
+
+If not:
+
+   my $auth = new CGI::Auth::Auto;
+
+If you do but it resides elsewhere:
+
+   my $auth = new CGI::Auth::Auto({ -logintmplpath => '/home/myself/public_html/templates' });
 
 =head1 SEE ALSO
 

@@ -6,6 +6,7 @@ WriteMakefile(
 		'CGI::Auth' => 0,
 		'Carp'		=> 0,
 		'HTML::Template' => 0,
+      'HTML::Template::Default' => 0,
       'LEOCHARRE::DEBUG' => '1.06',
       'Data::Dumper' => 0,
 	}, 
