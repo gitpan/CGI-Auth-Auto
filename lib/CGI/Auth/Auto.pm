@@ -3,7 +3,8 @@ use Carp;
 use strict;
 use base qw(CGI::Auth);
 use LEOCHARRE::DEBUG;
-our $VERSION = sprintf "%d.%02d", q$Revision: 1.12 $ =~ /(\d+)/g;
+use CGI::PathInfo ':all';
+our $VERSION = sprintf "%d.%02d", q$Revision: 1.17 $ =~ /(\d+)/g;
 $CGI::Auth::Auto::CGI_APP_COMPATIBLE = 'rm=logout';
 
 
@@ -20,11 +21,12 @@ sub new {
         ];      
    
 	$param->{-authdir}      ||= _guess_authdir();
-	$param->{-formaction}   ||= _guess_formaction();
-   $param->{-sessdir}      ||= _guess_sessdir();
+   
+	$param->{-formaction}   ||= script_rel_path(); #_guess_formaction();
+   $param->{-sessdir}      ||= $param->{-authdir}.'/sess';
  
    if (defined $param->{-logintmplpath} or defined $param->{-logintmpl}){
-      $param->{-logintmplpath}   ||= _guess_authdir();
+      $param->{-logintmplpath}   ||= $param->{-authdir};
       $param->{-logintmpl}       ||= 'login.html';
    }
    
@@ -39,19 +41,35 @@ sub new {
       return; 
    }
    
-	$self->init($param) or return undef;
+	unless( $self->init($param) ){
+      warn( sprintf "%s\::init() failed, authdir [%s], userfile expected at:[%s]",__PACKAGE__,$param->{-authdir}, $param->{-authdir}.'/user.dat');
+      return undef;
+   }
 
 	return $self;
 }
 
 
 
+sub authdir {
+   my $self = shift;
+   return $self->{authdir};
+}
 
+sub userdat {
+   my $self = shift;
+   return $self->{userdat};
+}
 
+sub sessdir {
+   my $self = shift;
+   return $self->{sessdir};
+}
 
-
-
-
+sub userfile {
+   my $self = shift;
+   return $self->{userfile};
+}
 
 
 # override check so that we can do cookie thing
@@ -275,22 +293,6 @@ sub set_logout_param_name {
 
 # GUESSING SUBS
 
-sub _guess_formaction {   
-   my $rel = $ENV{SCRIPT_NAME};
-   $rel ||= $0;
-   defined $rel or confess("cant guess -formaction");
-   
-     
-   if ($rel=~/^\// ){
-      debug("path starts with slash [$rel]");
-      defined $ENV{DOCUMENT_ROOT} or confess('ENV DOCUMENT ROOT is not set');
-      $rel=~s/^$ENV{DOCUMENT_ROOT}\/+//;
-      $rel=~s/^\/+//;
-   }
-
-   debug("$rel\n");
-   return "/$rel";
-}
 
 sub _guess_authdir {   
    my $dir = __guess_base().'/auth';   
@@ -299,46 +301,19 @@ sub _guess_authdir {
 }
 
 sub __guess_base {
-   my $dir;
-   require Cwd;  
-   
-   if (defined $ENV{DOCUMENT_ROOT}){
-      debug('$ENV{DOCUMENT_ROOT} is defined,');      
-      $dir =   Cwd::abs_path("$ENV{DOCUMENT_ROOT}/../cgi-bin");
-   }   
-   
-   else {      
-      $dir = _script_abs_loc();
-   }   
-   debug("$dir\n");
-   return $dir;
+   my $cgibin = abs_cgibin();
+
+   unless(defined $cgibin){
+      $cgibin = script_abs_loc() or confess("cant get script's absolute location");   
+   }
+   debug($cgibin);
+   return $cgibin;
 }
 
 sub _guess_sessdir {
-   my $dir = __guess_base().'/auth/sess';   
+   my $dir = __guess_authdir().'/sess';   
    debug("$dir\n");
    return $dir;
-}
-
-sub _script_abs_loc {
-   my $abs = _script_abs();
-   $abs=~s/\/+[^\/]+$//;
-   return $abs;
-}
-
-sub _script_abs {
-   my $abs = $0;
-
-   unless( defined $abs ){
-      defined $ENV{SCRIPT_NAME} or confess("cant get abs loc of script");
-      $abs = $ENV{SCRIPT_NAME};
-   }
-   
-   unless( $abs=~/^\//){
-      require Cwd;
-      $abs = Cwd::cwd().'/'.$abs;
-   }
-   return $abs;
 }
 
 

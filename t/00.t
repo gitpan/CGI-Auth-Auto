@@ -7,6 +7,8 @@ use Cwd;
 
 $CGI::Auth::Auto::DEBUG = 1;
 
+$CGI::PathInfo::DEBUG = 1;
+
 _makefiles();
 
 
