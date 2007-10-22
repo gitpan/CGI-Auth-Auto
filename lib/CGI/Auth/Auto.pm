@@ -3,8 +3,10 @@ use Carp;
 use strict;
 use base qw(CGI::Auth);
 use LEOCHARRE::DEBUG;
-use CGI::PathInfo ':all';
-our $VERSION = sprintf "%d.%02d", q$Revision: 1.17 $ =~ /(\d+)/g;
+use CGI::PathInfo;
+use vars qw($VERSION);
+$VERSION = sprintf "%d.%02d", q$Revision: 1.19 $ =~ /(\d+)/g;
+
 $CGI::Auth::Auto::CGI_APP_COMPATIBLE = 'rm=logout';
 
 
@@ -22,7 +24,7 @@ sub new {
    
 	$param->{-authdir}      ||= _guess_authdir();
    
-	$param->{-formaction}   ||= script_rel_path(); #_guess_formaction();
+	$param->{-formaction}   ||= CGI::PathInfo::script_rel_path(); #_guess_formaction();
    $param->{-sessdir}      ||= $param->{-authdir}.'/sess';
  
    if (defined $param->{-logintmplpath} or defined $param->{-logintmpl}){
@@ -301,7 +303,7 @@ sub _guess_authdir {
 }
 
 sub __guess_base {
-   my $cgibin = abs_cgibin();
+   my $cgibin = CGI::PathInfo::abs_cgibin();
 
    unless(defined $cgibin){
       $cgibin = script_abs_loc() or confess("cant get script's absolute location");   
@@ -318,6 +320,7 @@ sub _guess_sessdir {
 
 
 1;
+
 
 __END__
 
@@ -667,6 +670,10 @@ Make sure it is chown and chmod properly.
 
 If your cgi is failing, turn on L<DEBUG> and run it again. A lot of useful information may be there.
 
+=head2  Auth::check - Invalid 'User Name' field at ...
+
+Erase your user.dat and recreate.
+
 =head1 users.dat
 
 This file must reside inside your auth dir.
@@ -693,6 +700,7 @@ If you do but it resides elsewhere:
 
    my $auth = new CGI::Auth::Auto({ -logintmplpath => '/home/myself/public_html/templates' });
 
+
 =head1 SEE ALSO
 
 CGI::Auth, CGI::Cookie, HTML::Template
@@ -702,3 +710,6 @@ CGI::Auth, CGI::Cookie, HTML::Template
 Leo Charre leocharre at cpan dot org
 
 =cut
+
+
+
