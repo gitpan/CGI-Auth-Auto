@@ -1,13 +1,13 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         CGI-Auth-Auto
-version:      1.19
+version:      1.20
 version_from: lib/CGI/Auth/Auto.pm
 installdirs:  site
 requires:
     Carp:                          0
     CGI::Auth:                     0
-    CGI::PathInfo:                 1.01
+    CGI::Scriptpaths:              1.01
     Cwd:                           0
     Cwd::Ext:                      1.03
     Data::Dumper:                  0

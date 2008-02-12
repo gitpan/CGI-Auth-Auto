@@ -11,7 +11,7 @@ WriteMakefile(
       'Data::Dumper' => 0,
       'Cwd' => 0,
       'Cwd::Ext' => '1.03',
-      'CGI::PathInfo' => '1.01',
+      'CGI::Scriptpaths' => '1.01',
       'Linux::usermod' => 0,      
       'LEOCHARRE::CLI' => '1.09',
       

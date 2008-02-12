@@ -3,9 +3,9 @@ use Carp;
 use strict;
 use base qw(CGI::Auth);
 use LEOCHARRE::DEBUG;
-use CGI::PathInfo;
+use CGI::Scriptpaths;
 use vars qw($VERSION);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.19 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.20 $ =~ /(\d+)/g;
 
 $CGI::Auth::Auto::CGI_APP_COMPATIBLE = 'rm=logout';
 
@@ -24,7 +24,7 @@ sub new {
    
 	$param->{-authdir}      ||= _guess_authdir();
    
-	$param->{-formaction}   ||= CGI::PathInfo::script_rel_path(); #_guess_formaction();
+	$param->{-formaction}   ||= CGI::Scriptpaths::script_rel_path(); #_guess_formaction();
    $param->{-sessdir}      ||= $param->{-authdir}.'/sess';
  
    if (defined $param->{-logintmplpath} or defined $param->{-logintmpl}){
@@ -303,7 +303,7 @@ sub _guess_authdir {
 }
 
 sub __guess_base {
-   my $cgibin = CGI::PathInfo::abs_cgibin();
+   my $cgibin = CGI::Scriptpaths::abs_cgibin();
 
    unless(defined $cgibin){
       $cgibin = script_abs_loc() or confess("cant get script's absolute location");   
