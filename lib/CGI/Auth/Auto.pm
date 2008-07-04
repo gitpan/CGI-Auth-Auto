@@ -5,7 +5,7 @@ use base qw(CGI::Auth);
 use LEOCHARRE::DEBUG;
 use CGI::Scriptpaths;
 use vars qw($VERSION);
-$VERSION = sprintf "%d.%02d", q$Revision: 1.20 $ =~ /(\d+)/g;
+$VERSION = sprintf "%d.%02d", q$Revision: 1.21 $ =~ /(\d+)/g;
 
 $CGI::Auth::Auto::CGI_APP_COMPATIBLE = 'rm=logout';
 
@@ -220,9 +220,15 @@ sub get_cgi {
 
 sub username {
 	my $self = shift;
-	my $username =	$self->OpenSessionFile;
+   my ($username, undef) =	$self->OpenSessionFile;
 	$username or return;
 	return $username;
+}
+
+
+sub start_session {
+	my $self = shift;
+	return $self->SUPER::start_session; 
 }
 
 sub _get_sess_file_from_cookie {
@@ -704,6 +710,10 @@ If you do but it resides elsewhere:
 =head1 SEE ALSO
 
 CGI::Auth, CGI::Cookie, HTML::Template
+
+=head1 CONTRIBUTIONS
+
+Dulaunoy Fabrice
 
 =head1 AUTHOR
 

@@ -1,11 +1,15 @@
-Makefile.PL
+Changes
 MANIFEST
-lib/CGI/Auth/Auto.pm					# only real important thing
-cgi-bin/auth/login.html          # clean bare bones login template
-cgi-bin/auth/user.dat            # user:default password:default CHANGE THIS if you are using it
-cgi-bin/auth/README
-cgi-bin/auth.cgi                 # example script
-README									# notes
-META.yml                         #        Module meta-data (added by MakeMaker)
-t/00.t
+META.yml
+Makefile.PL
+README
 bin/authman
+cgi-bin/auth.cgi
+cgi-bin/auth/README
+cgi-bin/auth/authman.pl
+cgi-bin/auth/login.html
+cgi-bin/auth/sess/README
+cgi-bin/auth/user.dat
+lib/CGI/Auth/Auto.pm
+t/00.t
+t/CGI-Auth-Auto-1.20-1.21.patch
